@@ -15,15 +15,19 @@ RUN cd /go-ethereum && go mod download
 
 ADD . /go-ethereum
 RUN cd /go-ethereum && go run build/ci.go install -static ./cmd/geth
+# RUN make geth
 
 # Pull Geth into a second stage deploy alpine container
-FROM alpine:latest
+FROM alpine:3.20.3 AS runtime
 
 RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache bash
 COPY --from=builder /go-ethereum/build/bin/geth /usr/local/bin/
 
+COPY ./geth-private ./geth-private
+
 EXPOSE 8545 8546 30303 30303/udp
-ENTRYPOINT ["geth"]
+ENTRYPOINT ["bash", "./geth-private/run.sh"]
 
 # Add some metadata labels to help programatic image consumption
 ARG COMMIT=""
